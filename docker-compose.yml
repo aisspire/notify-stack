@@ -1,0 +1,120 @@
+name: notify-stack
+
+services:
+  gotify:
+    image: gotify/server:3.1.1
+    restart: unless-stopped
+    environment:
+      TZ: ${TZ:-Asia/Shanghai}
+      GOTIFY_DEFAULTUSER_NAME: ${GOTIFY_ADMIN_USER:?Set GOTIFY_ADMIN_USER in .env}
+      GOTIFY_DEFAULTUSER_PASS: ${GOTIFY_ADMIN_PASSWORD:?Set GOTIFY_ADMIN_PASSWORD in .env}
+      GOTIFY_REGISTRATION: "false"
+      GOTIFY_SERVER_SECURECOOKIE: ${GOTIFY_SECURE_COOKIE:-true}
+      GOTIFY_SERVER_STREAM_PINGPERIODSECONDS: "45"
+    ports:
+      - "127.0.0.1:${GOTIFY_PORT:-8080}:80"
+    volumes:
+      - gotify-data:/app/data
+    networks:
+      - notify
+    security_opt:
+      - no-new-privileges:true
+    mem_limit: 96m
+    mem_reservation: 24m
+    memswap_limit: 128m
+    cpus: 0.5
+    pids_limit: 128
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "--silent", "--max-time", "2", "http://127.0.0.1:80/health"]
+      interval: 15s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
+    logging:
+      driver: json-file
+      options:
+        max-size: "5m"
+        max-file: "3"
+
+  gateway:
+    image: notify-gateway:1.1.0
+    build:
+      context: ./gateway
+    restart: unless-stopped
+    environment:
+      GATEWAY_API_TOKEN: ${GATEWAY_API_TOKEN:?Set GATEWAY_API_TOKEN in .env}
+      GOTIFY_URL: ${GOTIFY_URL:-http://gotify:80}
+      GOTIFY_APP_TOKEN: ${GOTIFY_APP_TOKEN:?Create a Gotify application and set GOTIFY_APP_TOKEN}
+      GOTIFY_TIMEOUT_SECONDS: ${GOTIFY_TIMEOUT_SECONDS:-5}
+      MAX_REQUEST_BYTES: ${MAX_REQUEST_BYTES:-65536}
+    ports:
+      - "127.0.0.1:${GATEWAY_PORT:-8090}:8090"
+    depends_on:
+      gotify:
+        condition: service_healthy
+    networks:
+      - notify
+    read_only: true
+    tmpfs:
+      - /tmp:size=16m,noexec,nosuid
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    mem_limit: 96m
+    mem_reservation: 32m
+    memswap_limit: 128m
+    cpus: 0.5
+    pids_limit: 64
+    healthcheck:
+      test: ["CMD", "python", "/app/gateway/healthcheck.py", "8090"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
+    logging:
+      driver: json-file
+      options:
+        max-size: "5m"
+        max-file: "3"
+
+  cloudflared:
+    image: cloudflare/cloudflared:2026.10.3@sha256:faa8e0a1475f137c910be6025f43c8e4092fdd35461b31e19fd1390657a1ff39
+    profiles: ["tunnel"]
+    restart: unless-stopped
+    command: ["tunnel", "--no-autoupdate", "--config", "/etc/cloudflared/config.yml", "run"]
+    volumes:
+      - ./cloudflared/config.yml:/etc/cloudflared/config.yml:ro
+      - ./.secrets/cloudflared-runtime/tunnel.json:/run/secrets/tunnel.json:ro
+    networks:
+      - notify
+    depends_on:
+      gotify:
+        condition: service_healthy
+    read_only: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    mem_limit: 64m
+    mem_reservation: 24m
+    memswap_limit: 96m
+    cpus: 0.25
+    pids_limit: 64
+    healthcheck:
+      test: ["CMD", "cloudflared", "tunnel", "--metrics", "127.0.0.1:2000", "ready"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+    logging:
+      driver: json-file
+      options:
+        max-size: "5m"
+        max-file: "3"
+
+networks:
+  notify:
+
+volumes:
+  gotify-data:

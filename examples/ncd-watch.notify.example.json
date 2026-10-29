@@ -1,0 +1,32 @@
+{
+  "protocol": 1,
+  "serverId": "racknerd",
+  "bots": [
+    {
+      "botId": "napcat-qq",
+      "qqId": 123456789,
+      "botName": "NapCat QQ",
+      "backend": "napcat",
+      "deployment": "docker",
+      "containerName": "astrbot-napcat-1",
+      "webuiPort": 6099,
+      "webuiToken": "replace_with_existing_napcat_webui_token",
+      "enabled": true
+    }
+  ],
+  "webhookEnabled": true,
+  "webhooks": [
+    {
+      "id": "notify-gateway",
+      "name": "Local notification gateway",
+      "enabled": true,
+      "url": "http://127.0.0.1:8090/v1/notify",
+      "secret": "replace_with_gateway_api_token",
+      "method": "POST",
+      "bodyTemplate": "{\"source\":\"napcat-qq\",\"title\":\"QQ 状态变化\",\"message\":\"NapCat: {event}; time={time}; source={source}\",\"severity\":\"warning\",\"tags\":[\"qq\",\"napcat\"]}"
+    }
+  ],
+  "emailEnabled": false,
+  "notifyOnRecovered": true,
+  "onebot": {"enabled": false}
+}

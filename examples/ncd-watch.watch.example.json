@@ -1,0 +1,8 @@
+{
+  "protocol": 1,
+  "features": ["docker_watch", "webhook"],
+  "probeIntervalSecs": 15,
+  "desktopPresentTtlSecs": 90,
+  "debounceSecs": 300,
+  "notifyWhileDesktopPresent": true
+}

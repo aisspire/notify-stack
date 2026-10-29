@@ -1,0 +1,59 @@
+services:
+  napcat-watch:
+    image: notify-gateway:1.1.0
+    restart: unless-stopped
+    command: ["python", "-m", "uvicorn", "gateway.napcat.main:app", "--host", "0.0.0.0", "--port", "8091", "--no-access-log", "--no-proxy-headers", "--limit-concurrency", "8", "--timeout-keep-alive", "5"]
+    environment:
+      GATEWAY_API_TOKEN: ${GATEWAY_API_TOKEN}
+      GATEWAY_URL: http://gateway:8090
+      NAPCAT_URL: ${NAPCAT_URL:-http://napcat:6099}
+      NAPCAT_TOKEN_FILE: /run/secrets/napcat-webui-token
+      NAPCAT_LINK_SECRET: ${NAPCAT_LINK_SECRET:?Configure a separate NAPCAT_LINK_SECRET}
+      NAPCAT_PUBLIC_URL: ${NAPCAT_PUBLIC_URL:?Configure NAPCAT_PUBLIC_URL in .env}
+      NAPCAT_POLL_SECONDS: ${NAPCAT_POLL_SECONDS:-15}
+      NAPCAT_OFFLINE_SECONDS: ${NAPCAT_OFFLINE_SECONDS:-60}
+      NAPCAT_RECOVERY_SECONDS: ${NAPCAT_RECOVERY_SECONDS:-30}
+      NAPCAT_REMINDER_SECONDS: ${NAPCAT_REMINDER_SECONDS:-1800}
+      NAPCAT_LINK_TTL_SECONDS: ${NAPCAT_LINK_TTL_SECONDS:-3600}
+    ports:
+      - "127.0.0.1:8091:8091"
+    volumes:
+      - ./.secrets/napcat-watch/webui-token:/run/secrets/napcat-webui-token:ro
+      - napcat-watch-data:/app/state
+    networks:
+      - notify
+      - napcat
+    depends_on:
+      gateway:
+        condition: service_healthy
+    read_only: true
+    tmpfs:
+      - /tmp:size=8m,noexec,nosuid
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    mem_limit: 64m
+    mem_reservation: 24m
+    memswap_limit: 96m
+    cpus: 0.15
+    pids_limit: 32
+    healthcheck:
+      test: ["CMD", "python", "/app/gateway/healthcheck.py", "8091"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+    logging:
+      driver: json-file
+      options:
+        max-size: "3m"
+        max-file: "2"
+
+networks:
+  napcat:
+    external: true
+    name: ${NAPCAT_NETWORK:-astrbot_default}
+
+volumes:
+  napcat-watch-data:

@@ -1,0 +1,72 @@
+# 环境变量与敏感配置
+.env
+.env.*
+!.env.example
+.secrets/
+docker-compose.override.yml
+docker-compose.*.local.yml
+
+# Cloudflare 凭证与配置
+cloudflared/config.yml
+cloudflared/*.json
+cloudflared/*.pem
+
+# 数据库与应用持久化数据
+gotify-data/
+*.db
+*.db-*
+*.sqlite
+*.sqlite3
+
+# 密钥、证书与认证文件
+*.pem
+*.key
+*.crt
+*.cert
+*.pfx
+*.p12
+
+# Python 运行时与虚拟环境
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+env/
+ENV/
+build/
+dist/
+*.egg-info/
+
+# 测试与代码覆盖率
+.pytest_cache/
+.coverage
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+
+# 日志与临时文件
+*.log
+*.pid
+*.sock
+*.swp
+*.bak
+*.tmp
+*~
+
+# 压缩包与备份文件
+*.tar
+*.tar.gz
+*.tgz
+*.zip
+*.7z
+*.rar
+
+# 操作系统与 IDE 配置
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.sublime-project
+*.sublime-workspace
+

@@ -1,0 +1,12 @@
+tunnel: replace_with_tunnel_uuid
+credentials-file: /run/secrets/tunnel.json
+metrics: 0.0.0.0:2000
+
+ingress:
+  # Replace gotify.example.com with your public hostname
+  - hostname: gotify.example.com
+    path: ^/napcat/.*
+    service: http://napcat-watch:8091
+  - hostname: gotify.example.com
+    service: http://gotify:80
+  - service: http_status:404
